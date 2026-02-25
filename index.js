@@ -1,4 +1,5 @@
 const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const express = require('express');
 const { sequelize } = require('./db');
@@ -9,6 +10,7 @@ require('./models');
 // Импорт роутеров
 const userRoutes = require('./routes/userRoutes');
 const requestRoutes = require('./routes/requestRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const port = 3000;
@@ -18,13 +20,21 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Подключение роутеров
+// Статика фронтенда
+app.use(express.static('public'));
+
+// API
+app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/requests', requestRoutes);
 
-// Базовый маршрут
-app.get('/', (req, res) => {
-  res.send('Server start!');
+// SPA: для GET-запросов не к API отдаём index.html
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  if (req.path.startsWith('/auth') || req.path.startsWith('/users') || req.path.startsWith('/requests')) return next();
+  res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+    if (err) next();
+  });
 });
 
 // Инициализация базы данных

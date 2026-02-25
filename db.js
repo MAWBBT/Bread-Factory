@@ -1,12 +1,8 @@
 const { Sequelize } = require('sequelize');
 
-// Подключение к PostgreSQL.
-// Здесь сразу вносятся все данные БД прямо в конструктор Sequelize.
-// При необходимости просто поменяй значения констант ниже.
-
 const DB_NAME = 'bread_factory';     // имя базы данных
 const DB_USER = 'postgres';          // пользователь БД
-const DB_PASSWORD = '12345678'; // пароль пользователя
+const DB_PASSWORD = '4x24oqwpH'; // пароль пользователя
 const DB_HOST = 'localhost';         // хост
 const DB_PORT = 5432;                // порт PostgreSQL по умолчанию
 

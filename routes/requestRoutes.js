@@ -4,8 +4,10 @@ const {
   getAllRequests,
   getRequestById,
   createRequest,
-  deleteRequest
+  updateRequest,
+  deleteRequest,
 } = require('../controllers/requestController');
+const { optionalAuth, authMiddleware, requireAdmin } = require('../middleware/authMiddleware');
 
 // GET /requests - получить все заявки
 router.get('/', getAllRequests);
@@ -13,10 +15,13 @@ router.get('/', getAllRequests);
 // GET /requests/:id - получить заявку по id
 router.get('/:id', getRequestById);
 
-// POST /requests - создать новую заявку
-router.post('/', createRequest);
+// POST /requests - создать новую заявку (если есть токен — user_id подставится автоматически)
+router.post('/', optionalAuth, createRequest);
 
-// DELETE /requests/:id - удалить заявку по id
-router.delete('/:id', deleteRequest);
+// PATCH /requests/:id - изменить заявку (статус и т.д.) — только админ
+router.patch('/:id', authMiddleware, requireAdmin, updateRequest);
+
+// DELETE /requests/:id - удалить заявку (с optionalAuth для проверки прав)
+router.delete('/:id', optionalAuth, deleteRequest);
 
 module.exports = router;

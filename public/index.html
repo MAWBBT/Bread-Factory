@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Хлебозавод — Заявки</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Экран входа -->
+    <main id="screen-login" class="screen">
+      <div class="card auth-card">
+        <h1 class="logo">Хлебозавод</h1>
+        <p class="tagline">Система заявок</p>
+        <form id="form-login" class="auth-form">
+          <input type="text" name="username" placeholder="Логин" required autocomplete="username">
+          <input type="password" name="password" placeholder="Пароль" required autocomplete="current-password">
+          <p id="login-error" class="error-msg" hidden></p>
+          <button type="submit" class="btn btn-primary">Войти</button>
+        </form>
+        <p class="auth-switch">Нет аккаунта? <a href="#" id="link-register">Регистрация</a></p>
+      </div>
+    </main>
+
+    <!-- Экран регистрации -->
+    <main id="screen-register" class="screen" hidden>
+      <div class="card auth-card">
+        <h1 class="logo">Регистрация</h1>
+        <form id="form-register" class="auth-form">
+          <input type="text" name="username" placeholder="Логин" required autocomplete="username" minlength="2">
+          <input type="password" name="password" placeholder="Пароль" required autocomplete="new-password" minlength="4">
+          <p id="register-error" class="error-msg" hidden></p>
+          <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+        </form>
+        <p class="auth-switch">Уже есть аккаунт? <a href="#" id="link-login">Войти</a></p>
+      </div>
+    </main>
+
+    <!-- Основное приложение (после входа) -->
+    <main id="screen-app" class="screen" hidden>
+      <header class="app-header">
+        <h1 class="logo-small">Хлебозавод</h1>
+        <div class="header-right">
+          <a href="#" class="btn btn-outline" id="btn-admin-panel" style="display: none;">Админ-панель</a>
+          <span class="user-name" id="header-username"></span>
+          <button type="button" class="btn btn-outline" id="btn-logout">Выход</button>
+        </div>
+      </header>
+      <div class="app-content">
+        <section class="section">
+          <h2>Новая заявка</h2>
+          <form id="form-request" class="form-request">
+            <div class="form-row">
+              <label>Тип хлеба</label>
+              <input type="text" name="breadType" placeholder="Например: Белый, Ржаной" required>
+            </div>
+            <div class="form-row">
+              <label>Объём (кг)</label>
+              <input type="number" name="quantityKg" placeholder="100" min="0.01" step="0.01" required>
+            </div>
+            <div class="form-row">
+              <label>Статус</label>
+              <select name="status">
+                <option value="new">Новая</option>
+                <option value="in_progress">В работе</option>
+                <option value="done">Выполнена</option>
+                <option value="rejected">Отклонена</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Создать заявку</button>
+          </form>
+        </section>
+        <section class="section">
+          <h2>Заявки</h2>
+          <p id="requests-loading" class="muted">Загрузка…</p>
+          <p id="requests-empty" class="muted" hidden>Заявок пока нет.</p>
+          <ul id="requests-list" class="requests-list"></ul>
+        </section>
+      </div>
+    </main>
+
+    <!-- Админ-панель (только для администратора) -->
+    <main id="screen-admin" class="screen" hidden>
+      <header class="app-header">
+        <h1 class="logo-small">Хлебозавод</h1>
+        <div class="header-right">
+          <a href="#" class="btn btn-outline" id="btn-back-app">Заявки</a>
+          <span class="user-name" id="admin-header-username"></span>
+          <button type="button" class="btn btn-outline" id="btn-logout-admin">Выход</button>
+        </div>
+      </header>
+      <div class="app-content admin-content">
+        <section class="section">
+          <h2>Пользователи</h2>
+          <p id="admin-users-loading" class="muted">Загрузка…</p>
+          <p id="admin-users-empty" class="muted" hidden>Пользователей нет.</p>
+          <div class="admin-actions">
+            <button type="button" class="btn btn-primary" id="btn-add-user">Добавить пользователя</button>
+          </div>
+          <ul id="admin-users-list" class="admin-list"></ul>
+        </section>
+        <section class="section">
+          <h2>Все заявки</h2>
+          <p id="admin-requests-loading" class="muted">Загрузка…</p>
+          <p id="admin-requests-empty" class="muted" hidden>Заявок нет.</p>
+          <ul id="admin-requests-list" class="admin-requests-list"></ul>
+        </section>
+      </div>
+    </main>
+
+    <!-- Модальное окно: редактирование / создание пользователя -->
+    <div id="modal-user" class="modal" hidden>
+      <div class="modal-backdrop"></div>
+      <div class="modal-box">
+        <h3 id="modal-user-title">Редактировать пользователя</h3>
+        <form id="form-user-edit">
+          <input type="hidden" name="id" id="user-edit-id">
+          <div class="form-row">
+            <label>Логин</label>
+            <input type="text" name="username" id="user-edit-username" required>
+          </div>
+          <div class="form-row">
+            <label>Новый пароль (оставьте пустым, чтобы не менять)</label>
+            <input type="password" name="password" id="user-edit-password" placeholder="Не менять">
+          </div>
+          <div class="form-row form-row-checkbox">
+            <label><input type="checkbox" name="isAdmin" id="user-edit-isadmin"> Администратор</label>
+          </div>
+          <p id="modal-user-error" class="error-msg" hidden></p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline btn-modal-cancel">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
