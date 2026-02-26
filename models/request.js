@@ -25,7 +25,7 @@ Request.init(
       // например: 'new', 'in_progress', 'done', 'rejected'
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: 'new',
+      defaultValue: 'in_progress', // По умолчанию "В работе"
     },
   },
   {

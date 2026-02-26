@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Хлебозавод — Админ-панель</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Админ-панель -->
+    <main id="screen-admin" class="screen">
+      <header class="app-header">
+        <h1 class="logo-small">Хлебозавод</h1>
+        <div class="header-right">
+          <a href="/" class="btn btn-outline" id="btn-back-app">Заявки</a>
+          <span class="user-name" id="admin-header-username"></span>
+          <button type="button" class="btn btn-outline" id="btn-logout-admin">Выход</button>
+        </div>
+      </header>
+      <div class="app-content admin-content">
+        <section class="section">
+          <h2>Пользователи</h2>
+          <p id="admin-users-loading" class="muted">Загрузка…</p>
+          <p id="admin-users-empty" class="muted" hidden>Пользователей нет.</p>
+          <div class="admin-actions">
+            <button type="button" class="btn btn-primary" id="btn-add-user">Добавить пользователя</button>
+          </div>
+          <ul id="admin-users-list" class="admin-list"></ul>
+        </section>
+        <section class="section">
+          <h2>Все заявки</h2>
+          <p id="admin-requests-loading" class="muted">Загрузка…</p>
+          <p id="admin-requests-empty" class="muted" hidden>Заявок нет.</p>
+          <ul id="admin-requests-list" class="admin-requests-list"></ul>
+        </section>
+      </div>
+    </main>
+
+    <!-- Модальное окно: редактирование / создание пользователя -->
+    <div id="modal-user" class="modal" hidden>
+      <div class="modal-backdrop"></div>
+      <div class="modal-box">
+        <h3 id="modal-user-title">Редактировать пользователя</h3>
+        <form id="form-user-edit">
+          <input type="hidden" name="id" id="user-edit-id">
+          <div class="form-row">
+            <label>Логин</label>
+            <input type="text" name="username" id="user-edit-username" required>
+          </div>
+          <div class="form-row">
+            <label>Новый пароль (оставьте пустым, чтобы не менять)</label>
+            <input type="password" name="password" id="user-edit-password" placeholder="Не менять">
+          </div>
+          <div class="form-row form-row-checkbox">
+            <label><input type="checkbox" name="isAdmin" id="user-edit-isadmin"> Администратор</label>
+          </div>
+          <p id="modal-user-error" class="error-msg" hidden></p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline btn-modal-cancel">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>

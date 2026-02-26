@@ -11,7 +11,15 @@ function setToken(token) {
 
 function getUser() {
   try {
-    return JSON.parse(localStorage.getItem('user') || 'null');
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    const user = JSON.parse(userStr);
+    // Нормализуем isAdmin при чтении
+    if (user) {
+      user.isAdmin = !!user.isAdmin || !!user.is_admin;
+      user.is_admin = user.isAdmin;
+    }
+    return user;
   } catch {
     return null;
   }
@@ -20,6 +28,18 @@ function getUser() {
 function setUser(user) {
   if (user) localStorage.setItem('user', JSON.stringify(user));
   else localStorage.removeItem('user');
+}
+
+// Вспомогательная функция для проверки, является ли пользователь админом
+function isUserAdmin(user) {
+  if (!user) return false;
+  // Проверяем все возможные варианты
+  return user.isAdmin === true || 
+         user.is_admin === true || 
+         user.isAdmin === 1 || 
+         user.is_admin === 1 ||
+         user.isAdmin === 'true' ||
+         user.is_admin === 'true';
 }
 
 function showScreen(id) {
@@ -47,14 +67,29 @@ function showApp() {
   const user = getUser();
   document.getElementById('header-username').textContent = user ? user.username : '';
   const adminBtn = document.getElementById('btn-admin-panel');
-  const isAdmin = user && (user.isAdmin === true || user.is_admin === true);
-  adminBtn.style.display = isAdmin ? '' : 'none';
+  if (adminBtn) {
+    const isAdmin = isUserAdmin(user);
+    if (isAdmin) {
+      adminBtn.style.display = 'inline-block';
+      adminBtn.style.visibility = 'visible';
+      adminBtn.removeAttribute('hidden');
+    } else {
+      adminBtn.style.display = 'none';
+      adminBtn.style.visibility = 'hidden';
+    }
+  }
   loadRequests();
 }
 
 function showAdmin() {
-  showScreen('screen-admin');
   const user = getUser();
+  const isAdmin = isUserAdmin(user);
+  if (!isAdmin) {
+    alert('Доступ запрещён. Только администраторы могут войти в админ-панель.');
+    showApp();
+    return;
+  }
+  showScreen('screen-admin');
   document.getElementById('admin-header-username').textContent = user ? user.username : '';
   loadAdminUsers();
   loadAdminRequests();
@@ -68,6 +103,11 @@ function initAuth() {
     })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((user) => {
+        // Нормализуем флаг isAdmin
+        if (user) {
+          user.isAdmin = !!user.isAdmin || !!user.is_admin;
+          user.is_admin = user.isAdmin;
+        }
         setUser(user);
         showApp();
       })
@@ -101,7 +141,13 @@ document.getElementById('form-login').addEventListener('submit', (e) => {
         return;
       }
       setToken(data.token);
-      setUser(data.user);
+      const userData = data.user;
+      // Нормализуем флаг isAdmin
+      if (userData) {
+        userData.isAdmin = !!userData.isAdmin || !!userData.is_admin;
+        userData.is_admin = userData.isAdmin;
+      }
+      setUser(userData);
       showApp();
     })
     .catch(() => {
@@ -130,7 +176,13 @@ document.getElementById('form-register').addEventListener('submit', (e) => {
         return;
       }
       setToken(data.token);
-      setUser(data.user);
+      const userData = data.user;
+      // Нормализуем флаг isAdmin
+      if (userData) {
+        userData.isAdmin = !!userData.isAdmin || !!userData.is_admin;
+        userData.is_admin = userData.isAdmin;
+      }
+      setUser(userData);
       showApp();
     })
     .catch(() => {
@@ -155,10 +207,23 @@ document.getElementById('btn-logout').addEventListener('click', () => {
   showLogin();
 });
 
-document.getElementById('btn-admin-panel').addEventListener('click', (e) => {
-  e.preventDefault();
-  showAdmin();
-});
+// Обработчик клика на кнопку админ-панели - перенаправление на отдельную страницу
+const adminPanelBtn = document.getElementById('btn-admin-panel');
+if (adminPanelBtn) {
+  adminPanelBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const user = getUser();
+    if (!isUserAdmin(user)) {
+      alert('У вас нет прав доступа к админ-панели.');
+      return;
+    }
+    // Перенаправляем на отдельную страницу админ-панели
+    window.location.href = '/admin.html';
+  });
+} else {
+  console.error('Кнопка админ-панели не найдена в DOM');
+}
 
 document.getElementById('btn-back-app').addEventListener('click', (e) => {
   e.preventDefault();
@@ -184,10 +249,22 @@ function loadRequests() {
   loadingEl.hidden = false;
   emptyEl.hidden = true;
   fetch(API + '/requests', { headers: authHeaders() })
-    .then((r) => r.json())
+    .then((r) => {
+      if (!r.ok) {
+        if (r.status === 401) {
+          // Не авторизован - перенаправляем на страницу входа
+          setToken(null);
+          setUser(null);
+          showLogin('Требуется авторизация');
+          return Promise.reject('Требуется авторизация');
+        }
+        return r.json().then((data) => Promise.reject(data.error || 'Ошибка загрузки'));
+      }
+      return r.json();
+    })
     .then((requests) => {
       loadingEl.hidden = true;
-      if (!requests.length) {
+      if (!requests || !requests.length) {
         emptyEl.hidden = false;
         return;
       }
@@ -198,17 +275,19 @@ function loadRequests() {
             <strong>${escapeHtml(req.breadType)}</strong> — ${Number(req.quantityKg)} кг
             <div class="request-meta">ID: ${req.id}</div>
           </div>
-          <span class="request-status ${escapeHtml(req.status || 'new')}">${escapeHtml(req.status || 'new')}</span>
+          <span class="request-status ${escapeHtml(req.status || 'in_progress')}">${escapeHtml(getStatusLabel(req.status || 'in_progress'))}</span>
           <button type="button" class="btn btn-danger btn-delete" data-id="${req.id}">Удалить</button>
         `;
         li.querySelector('.btn-delete').addEventListener('click', () => deleteRequest(req.id, li));
         listEl.appendChild(li);
       });
     })
-    .catch(() => {
+    .catch((err) => {
       loadingEl.hidden = true;
-      emptyEl.textContent = 'Не удалось загрузить заявки.';
-      emptyEl.hidden = false;
+      if (err !== 'Требуется авторизация') {
+        emptyEl.textContent = err || 'Не удалось загрузить заявки.';
+        emptyEl.hidden = false;
+      }
     });
 }
 
@@ -216,6 +295,17 @@ function escapeHtml(s) {
   const div = document.createElement('div');
   div.textContent = s;
   return div.innerHTML;
+}
+
+// Функция для перевода статуса на русский язык
+function getStatusLabel(status) {
+  const statusMap = {
+    'new': 'Новая',
+    'in_progress': 'В работе',
+    'done': 'Выполнена',
+    'rejected': 'Отклонена'
+  };
+  return statusMap[status] || status;
 }
 
 function deleteRequest(id, li) {
@@ -234,10 +324,10 @@ function deleteRequest(id, li) {
 document.getElementById('form-request').addEventListener('submit', (e) => {
   e.preventDefault();
   const form = e.target;
+  // Статус не отправляется - он автоматически устанавливается в "in_progress" на сервере
   const payload = {
     breadType: form.breadType.value.trim(),
     quantityKg: parseFloat(form.quantityKg.value) || 0,
-    status: form.status.value || 'new',
   };
   fetch(API + '/requests', {
     method: 'POST',
@@ -255,7 +345,6 @@ document.getElementById('form-request').addEventListener('submit', (e) => {
       }
       form.breadType.value = '';
       form.quantityKg.value = '';
-      form.status.value = 'new';
       loadRequests();
     })
     .catch(() => alert('Ошибка создания заявки'));

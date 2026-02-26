@@ -9,14 +9,14 @@ const {
 } = require('../controllers/requestController');
 const { optionalAuth, authMiddleware, requireAdmin } = require('../middleware/authMiddleware');
 
-// GET /requests - получить все заявки
-router.get('/', getAllRequests);
+// GET /requests - получить все заявки (требуется авторизация)
+router.get('/', authMiddleware, getAllRequests);
 
 // GET /requests/:id - получить заявку по id
 router.get('/:id', getRequestById);
 
-// POST /requests - создать новую заявку (если есть токен — user_id подставится автоматически)
-router.post('/', optionalAuth, createRequest);
+// POST /requests - создать новую заявку (требуется авторизация)
+router.post('/', authMiddleware, createRequest);
 
 // PATCH /requests/:id - изменить заявку (статус и т.д.) — только админ
 router.patch('/:id', authMiddleware, requireAdmin, updateRequest);

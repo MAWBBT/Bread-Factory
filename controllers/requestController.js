@@ -1,9 +1,25 @@
 const { Request, User } = require('../models');
 
 // GET - выдать все строки таблицы заявок
+// Обычные пользователи видят только свои заявки, админы - все
 async function getAllRequests(req, res) {
   try {
-    const requests = await Request.findAll();
+    let requests;
+    if (req.user && req.user.isAdmin) {
+      // Админ видит все заявки
+      requests = await Request.findAll({
+        order: [['id', 'DESC']]
+      });
+    } else if (req.user) {
+      // Обычный пользователь видит только свои заявки
+      requests = await Request.findAll({
+        where: { user_id: req.user.id },
+        order: [['id', 'DESC']]
+      });
+    } else {
+      // Неавторизованный пользователь не видит заявки
+      requests = [];
+    }
     res.json(requests);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -33,19 +49,26 @@ async function getRequestById(req, res) {
 }
 
 // POST - создать новую заявку (user_id из токена, если авторизован)
+// Статус автоматически устанавливается в "in_progress", пользователи не могут его выбирать
 async function createRequest(req, res) {
   try {
-    const { breadType, quantityKg, status, user_id } = req.body;
+    const { breadType, quantityKg } = req.body;
     
     if (!breadType || !quantityKg) {
       return res.status(400).json({ error: 'Поля breadType и quantityKg обязательны' });
     }
 
+    // Проверяем, что пользователь авторизован
+    if (!req.user) {
+      return res.status(401).json({ error: 'Требуется авторизация для создания заявки' });
+    }
+
+    // Статус автоматически устанавливается в "in_progress"
     const request = await Request.create({
       breadType,
       quantityKg,
-      status: status || 'new',
-      user_id: req.user ? req.user.id : (user_id || null)
+      status: 'in_progress', // Автоматически "В работе"
+      user_id: req.user.id
     });
 
     res.status(201).json(request);

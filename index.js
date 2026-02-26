@@ -28,10 +28,16 @@ app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/requests', requestRoutes);
 
+// Роутинг для админ-панели
+app.get('/admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 // SPA: для GET-запросов не к API отдаём index.html
 app.use((req, res, next) => {
   if (req.method !== 'GET') return next();
   if (req.path.startsWith('/auth') || req.path.startsWith('/users') || req.path.startsWith('/requests')) return next();
+  if (req.path === '/admin.html') return next(); // Уже обработано выше
   res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
     if (err) next();
   });

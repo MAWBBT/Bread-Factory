@@ -32,7 +32,7 @@ async function register(req, res) {
     );
     res.status(201).json({
       token,
-      user: { id: user.id, username: user.username, isAdmin: user.isAdmin },
+      user: { id: user.id, username: user.username, isAdmin: !!user.isAdmin },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -66,7 +66,7 @@ async function login(req, res) {
     );
     res.json({
       token,
-      user: { id: user.id, username: user.username, isAdmin: user.isAdmin },
+      user: { id: user.id, username: user.username, isAdmin: !!user.isAdmin },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -80,7 +80,12 @@ async function me(req, res) {
       attributes: ['id', 'username', 'isAdmin'],
     });
     if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-    res.json(user);
+    // Явно возвращаем объект в нужном формате
+    res.json({
+      id: user.id,
+      username: user.username,
+      isAdmin: !!user.isAdmin, // Убеждаемся, что это boolean
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
